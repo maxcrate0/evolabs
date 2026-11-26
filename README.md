@@ -1,6 +1,6 @@
 # EvoLab
 
-Visualizador desktop para treinar populações de redes neurais por seleção, elitismo e mutação gaussiana. Inclui um ambiente 2D em que agentes aprendem a chegar a um alvo desviando de obstáculos.
+Visualizador desktop para treinar populações de redes neurais por seleção, elitismo e mutação gaussiana. Inclui três desafios 2D de navegação, voo e corrida com saltos.
 
 ## Executar
 
@@ -12,8 +12,6 @@ python main.py
 ```
 
 Em **Novo treino**, escolha o desafio e a rede dos agentes. O desafio **Desvie dos obstáculos** abre com uma prévia e está pronto para treinar. Para usar um ambiente próprio, escolha **Importar desafio**. Abra **Ajustes avançados** para mudar o número de agentes e de rodadas, as elites preservadas, o grupo de pais, a taxa de mutação por peso, o desvio padrão do ruído gaussiano e a semente.
-
-Os desafios integrados incluem **Voo das lanternas**, em que os agentes ganham altitude para passar pelas aberturas de uma caverna, e **Corrida lunar**, em que eles saltam sobre barreiras numa pista de rolagem lateral.
 
 Acima da simulação, **Melhor agente** exibe a rede com a maior pontuação da rodada e **Todos os agentes** exibe a população. A escolha vale para a próxima avaliação.
 
@@ -29,11 +27,28 @@ Para uma execução sem janela, use o terminal.
 
 ```powershell
 python main.py --headless --generations 100 --template multicamadas
-python main.py --headless --environment demo.py --population 256 --mutation-scale 0.12
-python main.py --headless --challenge lantern-flight --generations 20
-python main.py --headless --challenge moon-run --generations 20
 python main.py --headless --help
 ```
+
+## Desafios integrados
+
+Na janela, escolha um dos exemplos em **Novo treino → Desafio** e clique em **Começar treino**. Todos usam a mesma interface de visualização e salvamento.
+
+| Desafio | O que a rede aprende | Como pontua | Nome no terminal |
+| --- | --- | --- | --- |
+| **Desvie dos obstáculos** | Controlar o movimento em dois eixos para alcançar o alvo verde. | Aproximar-se do alvo soma pontos, chegar mais cedo dá um bônus e colisões descontam pontos. | `navigation` |
+| **Voo das lanternas** | Dar impulsos para manter a altitude e atravessar aberturas em uma caverna de rolagem lateral. | Ganha um ponto por passo de simulação que sobrevive. Bater nos obstáculos ou sair por cima ou por baixo encerra o voo. | `lantern-flight` |
+| **Corrida lunar** | Escolher o momento de saltar sobre barreiras de alturas e larguras variadas. | Ganha um ponto por passo de simulação que sobrevive. A corrida termina ao atingir uma barreira. | `moon-run` |
+
+Para rodar 20 gerações de cada desafio sem abrir uma janela, use `--challenge`. Sem essa opção, o EvoLab usa **Desvie dos obstáculos**.
+
+```powershell
+python main.py --headless --challenge navigation --generations 20
+python main.py --headless --challenge lantern-flight --generations 20
+python main.py --headless --challenge moon-run --generations 20
+```
+
+Os dois desafios de rolagem lateral geram o percurso a partir da semente da rodada. Para consultar a implementação, veja [demo.py](demo.py) e [challenges.py](challenges.py).
 
 ## Salvar, assistir e continuar
 
