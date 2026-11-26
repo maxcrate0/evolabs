@@ -13,7 +13,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 import numpy as np
 
-from environments import BUILTINS, open_environment
+from environments import BUILTINS, DEFAULT_CHALLENGE, LEGACY_BUILTINS, open_environment
 from evolution import Settings, TrainingState
 from network import build_network
 
@@ -31,13 +31,13 @@ class Experiment:
 
     @classmethod
     def create(cls, environment, architecture, *, python=False, external=False):
-        if environment and environment not in BUILTINS:
+        if environment and environment not in BUILTINS and environment not in LEGACY_BUILTINS:
             environment = str(Path(environment).resolve())
         if python:
             architecture = str(Path(architecture).resolve())
         elif isinstance(architecture, str):
             architecture = json.loads(architecture)
-        return cls(environment or "navigation", architecture, python, external)
+        return cls(environment or DEFAULT_CHALLENGE, architecture, python, external)
 
     @contextmanager
     def open(self):

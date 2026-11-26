@@ -8,7 +8,7 @@ from time import monotonic
 import tkinter as tk
 from tkinter import filedialog, simpledialog, ttk
 
-from environments import BUILTINS
+from environments import BUILTINS, DEFAULT_CHALLENGE
 from evolution import Settings, TrainingState, train
 from network import TEMPLATES
 from runs import DEFAULT_RUNS, Experiment, load_run, save_run
@@ -34,12 +34,11 @@ MODE_HELP = {
     "population": "Veja todos os agentes tentando resolver o desafio.",
     "none": "O treino avança sem animação. As pontuações continuam aparecendo.",
 }
-DEMO_ENV = "Desvie dos obstáculos"
+DEMO_ENV = "Flappy Bird"
 FILE_ENV = "Importar desafio"
 CHALLENGES = {
-    DEMO_ENV: ("navigation", "Desvie dos obstáculos para chegar ao alvo verde."),
-    "Voo das lanternas": ("lantern-flight", "Ganhe altitude para passar pelas aberturas na caverna."),
-    "Corrida lunar": ("moon-run", "Salte sobre as barreiras e avance pela superfície lunar."),
+    DEMO_ENV: (DEFAULT_CHALLENGE, "Bata as asas para passar pelas aberturas entre os canos."),
+    "Dinossauro do Google": ("chrome-dino", "Salte sobre os cactos enquanto a corrida acelera."),
 }
 JSON_ARCH = "JSON personalizado"
 PYTHON_ARCH = "Arquivo Python"
@@ -192,8 +191,9 @@ class App:
         self.total = 0
         self.closing = False
         root.title("EvoLab | Treino evolutivo")
-        root.geometry("1160x790")
-        root.minsize(900, 710)
+        root.geometry(f"{min(1160, root.winfo_screenwidth() - 40)}x"
+                      f"{min(790, root.winfo_screenheight() - 90)}")
+        root.minsize(900, 570)
         root.configure(bg=BG)
         root.protocol("WM_DELETE_WINDOW", self.close)
         self.style()
@@ -213,7 +213,9 @@ class App:
         style.configure("Heading.TLabel", font=("Segoe UI", 13, "bold"))
         style.configure("Field.TLabel", font=("Segoe UI", 10, "bold"))
         style.configure("Muted.TLabel", foreground=MUTED, font=("Segoe UI", 9))
-        style.configure("Metric.TLabel", font=("Segoe UI", 18, "bold"))
+        style.configure("Tile.TFrame", background=FIELD)
+        style.configure("Tile.TLabel", background=FIELD, foreground=MUTED, font=("Segoe UI", 9))
+        style.configure("Metric.TLabel", background=FIELD, font=("Segoe UI", 18, "bold"))
         style.configure("Best.Metric.TLabel", foreground=ACCENT)
         style.configure("Mean.Metric.TLabel", foreground=BLUE)
         style.configure("Status.TLabel", background=FIELD, foreground=MUTED,
@@ -261,15 +263,20 @@ class App:
 
         header = ttk.Frame(shell, style="Shell.TFrame")
         header.grid(row=0, column=0, sticky="ew", pady=(0, 12))
-        header.columnconfigure(0, weight=1)
-        ttk.Label(header, text="EvoLab", style="Title.TLabel").grid(row=0, column=0, sticky="w")
-        ttk.Label(header, text="Treine agentes para resolver desafios", style="Subtitle.TLabel").grid(
-            row=1, column=0, sticky="w"
-        )
+        header.columnconfigure(2, weight=1)
+        mark = tk.Canvas(header, width=40, height=40, bg=TINT, highlightthickness=0)
+        mark.grid(row=0, column=0, padx=(0, 10))
+        for y in (11, 29):
+            mark.create_line(9, y, 21, 20, 31, y, fill=ACCENT, width=2)
+        for x, y in ((9, 11), (9, 29), (21, 20), (31, 11), (31, 29)):
+            mark.create_oval(x - 3, y - 3, x + 3, y + 3, fill=ACCENT, outline="")
+        ttk.Label(header, text="EvoLab", style="Title.TLabel").grid(row=0, column=1, sticky="w")
+        ttk.Label(header, text="Laboratório de treino evolutivo", style="Subtitle.TLabel").grid(
+            row=0, column=2, sticky="w", padx=16)
         self.status = ttk.Label(header, text="●  Pronto para treinar", style="Status.TLabel")
-        self.status.grid(row=0, column=1, rowspan=2, sticky="e", padx=(0, 9))
+        self.status.grid(row=0, column=3, sticky="e", padx=(0, 9))
         self.open_button = ttk.Button(header, text="Abrir treino…", command=self.choose_run)
-        self.open_button.grid(row=0, column=2, rowspan=2, sticky="e")
+        self.open_button.grid(row=0, column=4, sticky="e")
 
         body = ttk.Frame(shell, style="Shell.TFrame")
         body.grid(row=1, column=0, sticky="nsew")
@@ -298,7 +305,7 @@ class App:
         viewer.rowconfigure(1, weight=1)
         bar = ttk.Frame(viewer)
         bar.grid(row=0, column=0, sticky="ew", pady=(0, 8))
-        ttk.Label(bar, text="Acompanhe o desafio", style="Heading.TLabel").pack(side="left")
+        ttk.Label(bar, text="Simulação", style="Heading.TLabel").pack(side="left")
         self.mode = tk.StringVar(value=next(iter(MODES)))
         modes = ttk.Frame(bar)
         modes.pack(side="right")
@@ -330,7 +337,7 @@ class App:
         card.grid(row=1, column=0, sticky="ew", pady=(12, 0))
         bar = ttk.Frame(card)
         bar.pack(fill="x", pady=(0, 2))
-        ttk.Label(bar, text="Como o treino evolui", style="Heading.TLabel").pack(side="left")
+        ttk.Label(bar, text="Pontuação por rodada", style="Heading.TLabel").pack(side="left")
         ttk.Label(bar, text="● Média", foreground=BLUE, font=("Segoe UI", 9)).pack(side="right")
         ttk.Label(bar, text="● Melhor", foreground=ACCENT, font=("Segoe UI", 9)).pack(side="right", padx=(0, 12))
         self.chart = tk.Canvas(card, height=104, width=200, bg=PANEL, bd=0, highlightthickness=0)
@@ -348,9 +355,9 @@ class App:
             ("Recorde do treino", "Metric.TLabel"),
         )):
             scores.columnconfigure(column, weight=1, uniform="scores")
-            cell = ttk.Frame(scores)
-            cell.grid(row=0, column=column, sticky="w")
-            ttk.Label(cell, text=label, style="Muted.TLabel").pack(anchor="w")
+            cell = ttk.Frame(scores, style="Tile.TFrame", padding=(10, 4))
+            cell.grid(row=0, column=column, sticky="ew", padx=(0 if column == 0 else 6, 0))
+            ttk.Label(cell, text=label, style="Tile.TLabel").pack(anchor="w")
             value = ttk.Label(cell, text="—", style=style)
             value.pack(anchor="w")
             self.metrics.append(value)
@@ -361,8 +368,43 @@ class App:
         self.settings_title = ttk.Label(sidebar, text="Novo treino", style="Heading.TLabel")
         self.settings_title.grid(row=0, column=0, sticky="w", pady=(0, 14))
 
-        pages = ttk.Frame(sidebar)
-        pages.grid(row=1, column=0, sticky="nsew")
+        area = ttk.Frame(sidebar)
+        area.grid(row=1, column=0, sticky="nsew")
+        canvas = tk.Canvas(area, bg=PANEL, width=275, height=1, highlightthickness=0)
+        scroll = ttk.Scrollbar(area, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scroll.set, yscrollincrement=18)
+        canvas.pack(side="left", fill="both", expand=True)
+        pages = ttk.Frame(canvas)
+        window = canvas.create_window(0, 0, anchor="nw", window=pages)
+
+        def fit_pages(_):
+            canvas.itemconfigure(window, width=canvas.winfo_width())
+            height = pages.winfo_reqheight()
+            canvas.configure(scrollregion=(0, 0, canvas.winfo_width(), height))
+            if height > canvas.winfo_height():
+                scroll.pack(side="right", fill="y")
+            else:
+                scroll.pack_forget()
+                canvas.yview_moveto(0)
+
+        def scroll_pages(event):
+            over_pages = (event.widget in (canvas, pages) or
+                          str(event.widget).startswith(str(pages) + "."))
+            if scroll.winfo_ismapped() and over_pages:
+                canvas.yview_scroll(-1 if event.delta > 0 else 1, "units")
+
+        def reveal_focus(event):
+            if scroll.winfo_ismapped() and str(event.widget).startswith(str(pages) + "."):
+                top = event.widget.winfo_rooty() - canvas.winfo_rooty()
+                overflow = top + event.widget.winfo_height() - canvas.winfo_height()
+                offset = top if top < 0 else max(0, overflow)
+                if offset:
+                    canvas.yview_moveto((canvas.canvasy(0) + offset) / pages.winfo_reqheight())
+
+        pages.bind("<Configure>", fit_pages)
+        canvas.bind("<Configure>", fit_pages)
+        self.root.bind("<MouseWheel>", scroll_pages, add="+")
+        self.root.bind("<FocusIn>", reveal_focus, add="+")
         pages.columnconfigure(0, weight=1)
         self.experiment = ttk.Frame(pages)
         self.experiment.grid(row=0, column=0, sticky="ew")

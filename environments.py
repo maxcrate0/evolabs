@@ -10,11 +10,14 @@ from pathlib import Path
 import numpy as np
 
 import demo
-from challenges import LanternFlight, MoonRun
+from challenges import ChromeDino, FlappyBird, LanternFlight, MoonRun
 from network import load_file
 
 
-BUILTINS = {"navigation": demo, "lantern-flight": LanternFlight(), "moon-run": MoonRun()}
+DEFAULT_CHALLENGE = "flappy-bird"
+BUILTINS = {DEFAULT_CHALLENGE: FlappyBird(), "chrome-dino": ChromeDino()}
+# Saved runs must keep the original rules and network dimensions.
+LEGACY_BUILTINS = {"navigation": demo, "lantern-flight": LanternFlight(), "moon-run": MoonRun()}
 
 
 def dimensions(info):
@@ -111,8 +114,11 @@ class ExecutableEnvironment:
 
 @contextmanager
 def open_environment(path=None, *, external=False):
-    if not path or path in BUILTINS:
-        yield PythonEnvironment(BUILTINS[path or "navigation"])
+    path = path or DEFAULT_CHALLENGE
+    if path in BUILTINS:
+        yield PythonEnvironment(BUILTINS[path])
+    elif path in LEGACY_BUILTINS:
+        yield PythonEnvironment(LEGACY_BUILTINS[path])
     elif Path(path).suffix.lower() == ".py" and not external:
         yield PythonEnvironment(load_file(path))
     else:

@@ -1,6 +1,6 @@
 # EvoLab
 
-Visualizador desktop para treinar populações de redes neurais por seleção, elitismo e mutação gaussiana. Inclui três desafios 2D de navegação, voo e corrida com saltos.
+Visualizador desktop para treinar populações de redes neurais por seleção, elitismo e mutação gaussiana. Inclui Flappy Bird e o Dinossauro do Google como desafios integrados.
 
 ## Executar
 
@@ -11,7 +11,7 @@ python -m pip install -r requirements.txt
 python main.py
 ```
 
-Em **Novo treino**, escolha o desafio e a rede dos agentes. O desafio **Desvie dos obstáculos** abre com uma prévia e está pronto para treinar. Para usar um ambiente próprio, escolha **Importar desafio**. Abra **Ajustes avançados** para mudar o número de agentes e de rodadas, as elites preservadas, o grupo de pais, a taxa de mutação por peso, o desvio padrão do ruído gaussiano e a semente.
+Em **Novo treino**, escolha o desafio e a rede dos agentes. O **Flappy Bird** abre com uma prévia e está pronto para treinar. Para usar um ambiente próprio, escolha **Importar desafio**. Abra **Ajustes avançados** para mudar o número de agentes e de rodadas, as elites preservadas, o grupo de pais, a taxa de mutação por peso, o desvio padrão do ruído gaussiano e a semente.
 
 Acima da simulação, **Melhor agente** exibe a rede com a maior pontuação da rodada e **Todos os agentes** exibe a população. A escolha vale para a próxima avaliação.
 
@@ -36,19 +36,17 @@ Na janela, escolha um dos exemplos em **Novo treino → Desafio** e clique em **
 
 | Desafio | O que a rede aprende | Como pontua | Nome no terminal |
 | --- | --- | --- | --- |
-| **Desvie dos obstáculos** | Controlar o movimento em dois eixos para alcançar o alvo verde. | Aproximar-se do alvo soma pontos, chegar mais cedo dá um bônus e colisões descontam pontos. | `navigation` |
-| **Voo das lanternas** | Dar impulsos para manter a altitude e atravessar aberturas em uma caverna de rolagem lateral. | Ganha um ponto por passo de simulação que sobrevive. Bater nos obstáculos ou sair por cima ou por baixo encerra o voo. | `lantern-flight` |
-| **Corrida lunar** | Escolher o momento de saltar sobre barreiras de alturas e larguras variadas. | Ganha um ponto por passo de simulação que sobrevive. A corrida termina ao atingir uma barreira. | `moon-run` |
+| **Flappy Bird** | Bater as asas no momento certo para atravessar os canos. | Ganha um ponto por passo de simulação que sobrevive. Bater nos canos, no chão ou no teto encerra o voo. | `flappy-bird` |
+| **Dinossauro do Google** | Saltar sobre os cactos enquanto a corrida acelera. | Ganha um ponto por passo de simulação que sobrevive. A corrida termina ao atingir um cacto. | `chrome-dino` |
 
-Para rodar 20 gerações de cada desafio sem abrir uma janela, use `--challenge`. Sem essa opção, o EvoLab usa **Desvie dos obstáculos**.
+Para rodar 20 gerações de cada desafio sem abrir uma janela, use `--challenge`. Sem essa opção, o EvoLab usa **Flappy Bird**.
 
 ```powershell
-python main.py --headless --challenge navigation --generations 20
-python main.py --headless --challenge lantern-flight --generations 20
-python main.py --headless --challenge moon-run --generations 20
+python main.py --headless --challenge flappy-bird --generations 20
+python main.py --headless --challenge chrome-dino --generations 20
 ```
 
-Os dois desafios de rolagem lateral geram o percurso a partir da semente da rodada. Para consultar a implementação, veja [demo.py](demo.py) e [challenges.py](challenges.py).
+Os dois desafios geram o percurso a partir da semente da rodada. A implementação está em [challenges.py](challenges.py). Treinos salvos dos desafios anteriores ainda podem ser reproduzidos e continuados.
 
 ## Salvar, assistir e continuar
 
@@ -103,7 +101,7 @@ def evaluate(predict, weights, *, view, seed):
 
 `weights` é a matriz somente leitura da população inteira. Chame `predict` por passo com um lote, ou use subconjuntos com pesos e observações alinhados. A `seed` é um inteiro gerado a cada avaliação a partir da semente do experimento.
 
-`scores` contém uma pontuação finita por indivíduo na ordem da entrada. Quanto maior, melhor. Use `view="none"` para pular toda a captura e omitir `frames`. Nos modos `best` e `population`, devolva os quadros da trajetória correspondente. Em empate, use o primeiro indivíduo de maior pontuação para que a visualização e o elitismo sigam a mesma ordem. Consulte [demo.py](demo.py) para um ambiente completo, com inferência de toda a população em lote.
+`scores` contém uma pontuação finita por indivíduo na ordem da entrada. Quanto maior, melhor. Use `view="none"` para pular toda a captura e omitir `frames`. Nos modos `best` e `population`, devolva os quadros da trajetória correspondente. Em empate, use o primeiro indivíduo de maior pontuação para que a visualização e o elitismo sigam a mesma ordem. Consulte `Scroller.evaluate` em [challenges.py](challenges.py) para um exemplo de inferência de toda a população em lote.
 
 ## Ambientes executáveis
 
